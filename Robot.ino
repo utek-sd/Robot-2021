@@ -6,7 +6,7 @@
 
 #define DEFAULT_SPEED 255
 
-class Robot {
+class Motor {
 
   int pwm_output_a = DEFAULT_SPEED;
   int pwm_output_b = DEFAULT_SPEED;
@@ -17,11 +17,13 @@ class Robot {
   int en_a = -1;
   int en_b = -1;
 
-  Robot() {
+public:
+
+   Motor() {
      //ctor
   }
 
-  ~Robot(){
+  ~Motor(){
     //dtor  
   }
   
@@ -55,25 +57,42 @@ class Robot {
     Initialise the L298N motor driver.    
     This method allows for using the enable pins on the robot so that motor speed can be controlled.    
   */
-  int init_motor_driver(int motor1_a, int motor1_b, int motor2_a, int motor_2b, int enA, int enB){
+  int init_motor_driver(int motor1_a, int motor1_b, int motor2_a, int motor2_b, int enA, int enB){
 
     this->motor1_a = motor1_a;
     this->motor1_b = motor1_b;
     this->motor2_a = motor2_a;
     this->motor2_b = motor2_b;
-    this->en_a = en_a;
-    this->en_b = en_b;
+    this->en_a = enA;
+    this->en_b = enB;
 
     //turn on the pins
     pinMode(motor1_a, OUTPUT);
     pinMode(motor1_b, OUTPUT);
     pinMode(motor2_a, OUTPUT);
-    pinMode(motor_2b, OUTPUT);
+    pinMode(motor2_b, OUTPUT);
 
     pinMode(en_a, OUTPUT);
     pinMode(en_b, OUTPUT);
 
     return 0;
+    
+  }
+
+  /*
+    @input: motor: motor_a = 0, motor_b = 1
+    @output: motor speed, negative number upon failure
+    Get the speed of a motors. 
+  */
+  int get_speed(int motor){
+
+    if (motor == 1){
+      return this->pwm_output_b;
+    }
+    else if (motor == 0){
+      return this->pwm_output_a;
+    }
+    else return -1;
     
   }
 
@@ -87,6 +106,7 @@ class Robot {
     if (this->en_a != -1 && this->en_b != -1) {
         this->pwm_output_a = speed;      
         this->pwm_output_b = speed;
+        this->update_speeds();
         return 0;
     }
 
@@ -95,7 +115,7 @@ class Robot {
 
   /*
     @input: speed: motor speed (0 - 255)
-            motor: 1 -> right motor, 0 -> left motor
+            motor: 0 ->  motor_a, 1 -> motor_b
     @output: 0 upon success, -1 upon failure
     Initialise the L298N motor driver.    
     Set the speed of a specific motor. If the enable pins are not connected then this function has no effect.
@@ -106,11 +126,13 @@ class Robot {
         
         if (motor == 0){
           this->pwm_output_a = speed;      
+          this->update_speeds();
           return 0;
         }        
         
         else if (motor == 1){
           this->pwm_output_b = speed;      
+          this->update_speeds();
           return 0;
         }
                
@@ -120,15 +142,56 @@ class Robot {
   }
 
   /*
+   * Set motor A's direction of rotation
+    @inputt: 0 -> forward, 1 -> reverse    
+  */
+  int set_motor_a_direction(int dir){
+
+    //forwards
+    if (dir == 0){
+      digitalWrite(this->motor1_a, LOW);
+      digitalWrite(this->motor1_b, HIGH);
+    }
+    //backwards
+    else if (dir == 1){
+      digitalWrite(this->motor1_a, HIGH);
+      digitalWrite(this->motor1_b, LOW);
+    }
+    
+  }
+
+  /*
+   * Set motorb 's direction of rotation
+    @inputt: 0 -> forward, 1 -> reverse    
+  */
+  int set_motor_b_direction(int dir){
+
+    //forwards
+    if (dir == 0){
+      digitalWrite(this->motor2_a, LOW);
+      digitalWrite(this->motor2_b, HIGH);
+    }
+    //backwards
+    else if (dir == 1){
+      digitalWrite(this->motor2_a, HIGH);
+      digitalWrite(this->motor2_b, LOW);
+    }
+    
+  }
+
+
+  /*
     @output: 0 -> forward, 1 -> reverse, -1 on an unknown state
     Return the current direction of rotation for motorA
   */
   int get_motor_a_direction(){
 
-    if (this->motor1_a == 0 && this->motor1_b == 1){
+    //forwards
+    if (digitalRead(this->motor1_a) == 0 && digitalRead(this->motor1_b) == 1){
       return 0;
     }
-    else if (this->motor1_a == 1 && this->motor1_b == 0){
+    //backwards
+    else if (digitalRead(this->motor1_a) == 1 && digitalRead(this->motor1_b) == 0){
       return 1;
     }
     else {
@@ -143,10 +206,12 @@ class Robot {
   */
   int get_motor_b_direction(){
 
-    if (this->motor1_a == 0 && this->motor1_b == 1){
+    //forwards
+    if (digitalRead(this->motor2_a) == 0 && digitalRead(this->motor2_b) == 1){
       return 0;
     }
-    else if (this->motor1_a == 1 && this->motor1_b == 0){
+    //backwards
+    else if (digitalRead(this->motor2_a) == 1 && digitalRead(this->motor2_b) == 0){
       return 1;
     }
     else {
@@ -156,13 +221,75 @@ class Robot {
   }
 
   /*
+   * Start the motors by setting the motor1_a and motor2_a pins to logic level HIGH.
+    @output: 0 upon successful test of internal variables, 1 otherwise
+  */
+  int start(){
+
+    digitalWrite(this->motor1_a, HIGH);
+    digitalWrite(this->motor2_a, HIGH);
+    analogWrite(this->en_a, pwm_output_a);
+    analogWrite(this->en_b, pwm_output_b);    
+    return 0;
+      
+  }
+
+  /*
     @output: 0 upon successful test of internal variables, 1 otherwise
   */
   int verify() {
     
+    Serial.println(this->motor1_a);
+    Serial.println(this->motor1_b);
+    Serial.println(this->motor2_a);
+    Serial.println(this->motor2_b);
+    Serial.println(this->en_a);
+    Serial.println(this->en_b);
+    Serial.println(this->pwm_output_a);
+    Serial.println(this->pwm_output_b);
+    return 0;
+    
   }
+
+private:
+
+    /* Synchronize motor speed settings
+     * @output 0 upon success
+     */
+    int update_speeds(){
+
+      analogWrite(this->en_a, this->pwm_output_a);
+      analogWrite(this->en_b, this->pwm_output_b);
+      
+    }
   
 };
 
-void setup(){}
-void loop(){}
+Motor r;
+
+void setup(){
+  
+  Serial.begin(9600);  
+  Serial.setTimeout(250);
+  r.init_motor_driver(3,2,4,5, A4, A5);
+  Serial.println("MOTORS INITALISED");
+  
+  r.verify();
+  r.start();  
+  r.set_speed(255,0);
+   
+}
+
+void loop(){  
+   
+}
+
+void serialEvent() {
+
+   int pwmOutput = Serial.parseInt();
+    r.set_speed(pwmOutput);
+    Serial.println(r.get_speed(0));
+    Serial.println(r.get_speed(1));
+   
+  
+}

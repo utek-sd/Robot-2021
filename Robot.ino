@@ -1,13 +1,13 @@
 /*
   Robot class. UTEK-SD. 2021.  
 */
+#include "Robot.h"
 
-#include <Adafruit_TCS34725.h>
-
-#define DEFAULT_SPEED 255
-
+/*
+ *  MOTOR
+*/
 class Motor {
-
+    
   int pwm_output_a = DEFAULT_SPEED;
   int pwm_output_b = DEFAULT_SPEED;
   int motor1_a = -1;
@@ -265,31 +265,44 @@ private:
   
 };
 
-Motor r;
+/*
+ *  ULTRASONIC SENSOR
+*/
 
-void setup(){
+
+void Ultrasonic::start_sensor(int echo, int trig) {
+
+  this->trig_pin = trig;
+  this->echo_pin = echo;
+  this->sonar = new NewPing(this->trig_pin,  this->echo_pin, MAX_DISTANCE);
   
-  Serial.begin(9600);  
-  Serial.setTimeout(250);
-  r.init_motor_driver(3,2,4,5, A4, A5);
-  Serial.println("MOTORS INITALISED");
-  
-  r.verify();
-  r.start();  
-  r.set_speed(255,0);
-   
 }
 
-void loop(){  
-   
+int Ultrasonic::verify() {
+      
+    if (this->trig_pin > 0 || this->echo_pin > 0){
+        return 0;
+    }
+    else {
+        return -1;
+    }      
+  
 }
 
-void serialEvent() {
+int Ultrasonic::get_distance() {
 
-   int pwmOutput = Serial.parseInt();
-    r.set_speed(pwmOutput);
-    Serial.println(r.get_speed(0));
-    Serial.println(r.get_speed(1));
-   
-  
+  if (this->sonar == nullptr){    
+    Serial.println("Sonar not initialised.");
+    return -1;
+  }
+
+  return (this->sonar)->ping_cm();
+    
+}
+
+void Ultrasonic::release() {
+
+  delete this->sonar;
+  this->sonar = nullptr;
+    
 }

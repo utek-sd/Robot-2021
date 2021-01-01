@@ -1,27 +1,27 @@
 #include <Adafruit_TCS34725.h>
 #include <NewPing.h>
 #define DEFAULT_SPEED 255
-
+#include <Servo.h>
 
 class Ultrasonic {
-     
-    #define MAX_DISTANCE 200 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
-    #define TRIGGER_PIN  12  // Arduino pin tied to trigger pin on the ultrasonic sensor.
-    #define ECHO_PIN     11  // Arduino pin tied to echo pin on the ultrasonic sensor.
-    
-private:
-    
+
+#define MAX_DISTANCE 200 // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+#define TRIGGER_PIN  12  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define ECHO_PIN     11  // Arduino pin tied to echo pin on the ultrasonic sensor.
+
+  private:
+
     int trig_pin = -1;
     int echo_pin = -1;
-    //NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.    
+    //NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); // NewPing setup of pins and maximum distance.
     NewPing* sonar = nullptr;
 
-public:
+  public:
     /*
-      Start the ultrasonic sensor. 
+      Start the ultrasonic sensor.
       Input: echo pin, trigger pin
     */
-    void start_sensor(int echo = ECHO_PIN,int trigger = TRIGGER_PIN);
+    void start_sensor(int echo = ECHO_PIN, int trigger = TRIGGER_PIN);
 
     /*
       Returns the distance in centimetres.
@@ -30,8 +30,8 @@ public:
     int get_distance();
 
     /*
-     * Ensure the trigger and echo pins are not set to an invalid value.
-     * Output: Returns 0 upon success. Otherwise a non-positive and a non-zero value.
+       Ensure the trigger and echo pins are not set to an invalid value.
+       Output: Returns 0 upon success. Otherwise a non-positive and a non-zero value.
     */
     int verify();
 
@@ -39,5 +39,15 @@ public:
       Clean up resources used by this sensor.
     */
     void release();
-    
+
+
+    /*
+      dtor
+    */
+    ~Ultrasonic();
+
 };
+
+
+//Colour sensor conversion function
+void convert_to_rgb(int* red, int* green, int* blue, int* clear);

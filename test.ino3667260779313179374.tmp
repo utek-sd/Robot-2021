@@ -2,14 +2,6 @@ Ultrasonic u;
 Motor r;
 Servo s;
 
-struct Color {
-
-  int red;
-  int green;
-  int blue;
-
-};
-
 #define DIAMETRE 0.125f
 #define RADIUS DIAMETRE/2
 #define WHEEL_RADIUS 0.065f
@@ -33,14 +25,24 @@ void rotation_test() {
 void acceleration_test() {
 
   r.set_speed(0);
-  r.start();
   int START = 150;
 
-  for (int i = START; i < 260; i += 5) {
+  for (int i = START; i < 255; i += 255 / 10) {
 
     r.set_speed(i, 0);
     Serial.println(i);
-    delay(100);
+    delay(25);
+
+  }
+
+  r.set_speed(0);
+  delay(500);
+
+  for (int i = START ; i < 255; i += 255 / 10) {
+
+    r.set_speed(i, 1);
+    Serial.println(i);
+    delay(25);
 
   }
 
@@ -86,24 +88,27 @@ void setup() {
   Serial.begin(9600);
   Serial.setTimeout(250);
 
-  r.init_motor_driver(2, 3, 4, 5, 9, 10);
-  r.set_speed(0, 1);
-  r.set_speed(0, 0);
-  r.start();
-  u.start_sensor(13, 12);
+  //  r.init_motor_driver(2, 3, 4, 5, 9, 10);
+  //  r.set_speed(0, 1);
+  //  r.set_speed(0, 0);
+  //  r.start();
+  //  r.verify();
+  //
+  //  u.start_sensor(13, 12);
+  //  u.verify();
+  //
+  //  s.attach(6);
 
-  //    s.attach(6);
-
-  //init colour sensor
   if (tcs.begin()) {
-    Serial.println("Found sensor");
+    //    Serial.println("Found sensor");
   } else {
     Serial.println("No TCS34725 found ... check your connections");
     while (1);
   }
 
-  pinMode(7, INPUT);
-  pinMode(8, INPUT);
+  //  pinMode(7, INPUT);
+  //  pinMode(8, INPUT);
+  pinMode(12, INPUT);
 
 }
 
@@ -237,7 +242,7 @@ void test_colour() {
   }
 
   int r, g, b, c;
-  tcs.getRawData((uint16_t*)&r, (uint16_t*)&g, (uint16_t*)&b, (uint16_t*)&c);
+  tcs.getRawData(&r, &g, &b, &c);
   convert_to_rgb(&r, &g, &b, &c);
   Serial.print("R:\t"); Serial.print(int(r));
   Serial.print("\tG:\t"); Serial.print(int(g));
@@ -246,30 +251,27 @@ void test_colour() {
 
 }
 
-struct Color get_colour() {
+typedef struct Color {
 
-  int r, g, b, c;
-  tcs.getRawData((uint16_t*)&r, (uint16_t*)&g, (uint16_t*)&b, (uint16_t*)&c);
-  convert_to_rgb(&r, &g, &b, &c);
+  int red;
+  int green;
+  int blue;
+  
+};
 
-  return {r, g, b};
+void get_colour() {
 
-}
-
-int count = 1;
-
-struct Color average_colour() {
-
-  int redAvg = 0, greenAvg = 0, blueAvg = 0;
-
-  for (int i = 0 ; i < count; i++) {
-    struct Color col = get_colour();
-    redAvg += col.red;
-    greenAvg += col.green;
-    blueAvg += col.blue;
+  //take reading with the lights off
+  if (digitalRead(12) == LOW) {
+    tcs.setInterrupt(true);  // turn off LED when true}
+  }
+  else {
+    tcs.setInterrupt(false);  // turn off LED when true}
   }
 
-  return {redAvg / count, greenAvg / count, blueAvg / count};
+  int r, g, b, c;
+  tcs.getRawData(&r, &g, &b, &c);
+  convert_to_rgb(&r, &g, &b, &c);
 
 }
 
@@ -286,20 +288,20 @@ int average_dist() {
 }
 
 int  SrV = -1, SlV = -1, dist = -1;
-int red = 87, g = 64, b = 117;
-
 
 void controller() {
 
+  //  int black_right = 8;
+  //  int brown_left = 7;
+
   SlV = digitalRead(7);
   SrV = digitalRead(8);
-  dist = u.get_distance();
-  Serial.println(dist);
+  dist = average_dist();
 
-  if (dist > 10) {
+  if (dist > 5) {
 
     if (SrV == LOW && SlV == LOW) {
-      forward(225);
+      forward(200);
     }
     else if (SrV == HIGH && SlV == LOW)
     {
@@ -318,21 +320,9 @@ void controller() {
     s.write(90);
 
   } else {
-
+    analogWrite(A0, 128);
     stop();
-    auto col = average_colour();
-    
-    //check whether the colour that has been detected is similar to the colour that needs to be sensed.
-    //use Euclidean distance between the colour co-ordinates to detect similarity.
-    //See https://github.com/systembolaget/Physical-computing-sensor-servo-tutorial-6a-Colour-finder-with-ams-TCS34725-and-HD-1900A for a tutorial.
-    
-    float magDiff = sqrt( (col.red - red) * (col.red - red) + (col.green - g) * (col.green - g) + (col.blue - b) * (col.blue - b) );
-    Serial.println(magDiff);
-
-    if (magDiff < 10) {
-      analogWrite(A0, 128);
-    }
-
+    s.write(15);
   }
 
 }
@@ -345,6 +335,7 @@ void loop() {
 
 void serialEvent() {
 
-
+  int p = Serial.parseInt();
+  r.set_speed(p, 0);
 
 }
